@@ -1,0 +1,13 @@
+{
+  "md": "【YYMM】项目简称手册.md",
+  "out_dir": ".",
+  "stem": "【YYMM】项目简称手册",
+  "title": "文档标题",
+  "formats": ["docx", "pdf"],
+  "lines": 4,
+  "lines_rules": { "环节 4": 8 },
+  "refs": ["中文定稿.md", "中文定稿_EN.md"],
+  "verify": false,
+  "q_range": "2-33",
+  "tmp_dir": "C:\\Agent\\_handout_tmp"
+}

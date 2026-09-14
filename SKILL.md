@@ -1,0 +1,97 @@
+---
+name: handout
+description: 把一份结构化 markdown 渲染成排版齐整的 docx 与 A4 打印用 PDF——现场主持人手册、访谈脚本、评估表这类要打印出来、拿在手上用的件。管的是解析、分页、双语排布、红框与手写横线、以及两条渲染线（python-docx 出可编辑副本、Edge 无头模式出 PDF）。当用户说"把手册渲染出来""md 转 docx / PDF""出打印版""排版成能打印的件"时使用。注意与 handoff（把会话压成交接文档）不是一回事。
+agent_created: true
+---
+
+# handout · markdown 到 docx / PDF 的排版渲染
+
+把一份写好的 markdown 渲染成两样东西：一份能在 Word 里改的 docx，一份能直接打印的 A4 PDF。
+一次解析出元素列表，两条渲染线共用它——docx 走 python-docx，PDF 走「生成带打印样式的 HTML，
+再用 Edge 无头模式打印」。
+
+两条线的分页不保证逐页一致，**打印以 PDF 为准**，docx 当可编辑副本。
+
+## 什么时候用
+
+手上有结构化 markdown，要出打印件或可编辑件：现场主持人手册、访谈脚本、评估表、评分卡。
+源文件里已经写好双语话术、栏名、清单，需要的是把它们排成能读能写的样子。
+
+**不适用**：md → 英文本地化（`sc-to-en`）、md → Excel 留档（`md-to-research-xlsx`）、
+设计问卷与大纲本身（`adaptor`）。本技能只管排版，不改一个字。名字和 `handoff` 只差一个字母，
+那个是会话交接，别点错。
+
+## 怎么跑
+
+最省事的是写一份 job 配置，把路径、文件名、横线例外、源头文件都写进去：
+
+```json
+{
+  "md": "…\\【2609】3D二合主持人手册.md",
+  "out_dir": "…",
+  "stem": "【2609】3D二合主持人手册",
+  "title": "3D二合 现场主持人手册",
+  "lines": 4,
+  "lines_rules": { "环节 4": 8 },
+  "refs": ["…\\3D二合北美有人访谈大纲.md", "…\\3D二合北美有人访谈大纲_EN.md"]
+}
+```
+
+```
+<python> scripts/render_handout.py --config <job.json>
+```
+
+临时用就全走命令行，`--md` 是唯一必填项：
+
+```
+<python> scripts/render_handout.py --md 手册.md --out-dir . --lines 4 \
+    --lines-rule "环节 4=8" --ref 定稿.md --ref 定稿_EN.md
+```
+
+`python` 要用装了 `python-docx` 的那个解释器，路径见 `references/environment.md`。
+跑完会有一份报告，写明元素统计、分页锚点、两份产出的字节数，以及校验结果。
+
+## 保真校验默认关着
+
+如果这份 markdown 是从别的文件（定稿、需求、旧版）提取重组出来的，用 `--ref` 给出源头文件，
+渲染完就会顺带做一次逐字回查：markdown 里每一句中英双语行，都要能在源头文件里原样找到；
+找不到的连行号一起报出来，退出码非零。
+
+自己手写的 markdown 不必开这个开关，给了 `--ref` 就等于开了。它只查「找不到」，
+不查「意思变了」——同义替换、语序调整一律看不出来。再加 `--q-range 2-33` 能顺带校验题号
+有没有缺号，`--docx` 会附上 docx 的段落、表格、分页统计。
+
+## 源文件怎么写
+
+这半是硬约定，写错了版式就不对：**不写自定义标记**。横线由「观察记录点」这个栏名触发，
+浅红框由四个栏名触发（内部提醒、内部参考词库、记录清单（主持人用）、提示清单（主持人用）），
+分页由二级标题触发。这样一来源文件是干净的标准 markdown，谁都能读、谁都能改。
+
+写法细节见 `references/markdown-conventions.md`。
+
+## 版式怎么改
+
+默认值照搬现在在用的这套手册：A4、正文 10pt、要念的话英文 11.5pt 在上、中文 9pt 灰字在下、
+红框浅底左竖条、每题记录点下 4 条手写横线。临时改传 `--style key=value`，
+常驻改写进 job 配置的 `style` 段。键名与色值见 `references/layout-spec.md`。
+
+## 不该做的
+
+不要把源 markdown 也生成一遍——技能只读它。不要为了改版式去改源文件，版式是渲染器的事。
+不要用 Office 系转 PDF，这台机器上那条路不通（缘由见 `references/environment.md`）。
+
+## references 导航
+
+| 文件 | 内容 |
+|------|------|
+| `references/markdown-conventions.md` | 渲染器认哪些写法：标题、双语行、栏名、表格、已废标记 |
+| `references/layout-spec.md` | 版式默认值：页面、字号、颜色、手写横线、分页的做法与改法 |
+| `references/environment.md` | 本机渲染链：python 用哪个、Edge 怎么调、为什么走 ASCII 中转、输出怎么抓 |
+
+## 维护
+
+改了渲染逻辑，就把这次的摩擦写进对应的 references，再动 SKILL.md 的流程。版式的取舍写在
+`layout-spec.md`，机器与命令的坑写在 `environment.md`，解析规则写在 `markdown-conventions.md`。
+
+条目里的日期是它被定下来的那一次。遇到与之冲突的新裁决，改条目本身、把旧写法替换掉，
+不要并列两种写法。
